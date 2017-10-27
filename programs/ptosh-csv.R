@@ -4,8 +4,7 @@ kOrganization <- "JPLSG"  # 団体名
 kTrialTitle <- "ALL-B12"  # 試験名
 # *********************************
 # output,rawdataはaronas上にて入出力する
-# prtpath <- "//192.168.200.222/Datacenter/Users/yonejima/ALL-B12"
-prtpath <- "C:/Users/MarikoOhtsuka/Documents/github/PtoshCSV"
+prtpath <- "//aronas/Datacenter/Users/ohtsuka/ALL-B12"
 rawdatapath <- paste0(prtpath, "/rawdata")
 outputpath <- paste0(prtpath, "/output")
 # rawdataフォルダ内のファイル名を取得
@@ -16,7 +15,8 @@ kAllocation <- "allocation"
 # registrationシート読み込み
 registration_index <- grep(paste(kOrganization, "registration", sep="_"), file_list)
 if (registration_index > 0) {
-  registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings = "")
+  # na.strings = "" の指定で文字列"NA"を残す
+  registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings="")
   file_list <- file_list[ - registration_index]
 }
 # 団体名_YYMMDD_HHMM.csv読み込み
@@ -91,9 +91,8 @@ for (i in 1:length(file_list)){
       df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
     }
 
-    # 作成日"
+    # 作成日
     output_csv$作成日 <- input_csv$作成日
-    #    output_csv$作成日 <- NA
     input_csv <- input_csv[ ,colnames(input_csv) != "作成日"]
     # "最終更新日"
     output_csv$最終更新日 <- input_csv$最終更新日
@@ -109,12 +108,12 @@ for (i in 1:length(file_list)){
     # "現施設名"
     # 空列にする
     output_csv$現施設名 <- NA
-    # 5★"シート作成時診療科名"
+    # シート作成時診療科名"
     output_csv$シート作成時診療科名 <- input_csv$シート作成時診療科名
     input_csv <- input_csv[ ,colnames(input_csv) != "シート作成時診療科名"]
     # "シート作成時団体別施設コード"
-    # 空列にする
-    output_csv$シート作成時団体別施設コード <- NA
+    output_csv$シート作成時団体別施設コード <- input_csv$シート作成時団体別施設コード
+    input_csv <- input_csv[ ,colnames(input_csv) != "シート作成時団体別施設コード"]
     # "診察券番号"
     # 空列にする
     output_csv$診察券番号 <- NA
@@ -123,26 +122,26 @@ for (i in 1:length(file_list)){
     # "診断日"
     # 空列にする
     output_csv$診断日 <- NA
-    # 6★"シート作成時担当医"
+    # "シート作成時担当医"
     output_csv$シート作成時担当医 <- input_csv$シート作成時担当医
     input_csv <- input_csv[ ,colnames(input_csv) != "シート作成時担当医"]
     # "現担当医"
     # 空列にする
     output_csv$現担当医 <- NA
-    # 7★"登録コード"
+    # "登録コード"
     output_csv$登録コード <- input_csv$登録コード
     input_csv <- input_csv[ ,colnames(input_csv) != "登録コード"]
     # "患者イニシャル"
     output_csv$患者イニシャル <- df_registration$患者イニシャル
     # "患者カナ"
     output_csv$患者カナ <- df_registration$患者カナ
-    # 8★"症例登録番号"
+    # "症例登録番号"
     output_csv$症例登録番号 <- input_csv$症例登録番号
     input_csv <- input_csv[ ,colnames(input_csv) != "症例登録番号"]
     # "性別"
     output_csv$性別 <- df_registration$性別
     # "住所"
-    # NA
+    # 空列にする
     output_csv$住所 <- NA
     # "生死"
     output_csv$生死 <- df_registration$生死
@@ -150,8 +149,8 @@ for (i in 1:length(file_list)){
     output_csv$死亡日 <- df_registration$死亡日
     # "最終確認日"
     output_csv$最終確認日 <- df_registration$最終確認日
-    # 9★"シート作成時施設コード"
-    # 10★"再入力依頼"
+    # "シート作成時施設コード"
+    # "再入力依頼"
     # この2列はinput_csvに残し、あとで削除
     output_csv$シート作成時施設コード <- input_csv$シート作成時施設コード
     output_csv$再入力依頼 <- input_csv$再入力依頼
@@ -159,22 +158,20 @@ for (i in 1:length(file_list)){
     # NA
     output_csv$ログインユーザー <- NA
 
-    # ALL-B12 allocation1～3固有
+    # allocationシート固有処理
     if (allocation_F) {
       # "グループ（郡）"
       # "割付ラベル"
       output_csv[ ,'グループ（郡）'] <- NA
       output_csv$割付ラベル <- NA
     }
-    # ↑この列以降はそのまま残す
+
+    # 上記列以降はそのまま残す
     if (ncol(input_csv) > 2) {
-      # シート作成時施設コード、再入力依頼以外の列が残っていれば結合する
+      # シート作成時施設コード、再入力依頼以外の列が残っていれば結合対象
       input_csv <- input_csv[ ,colnames(input_csv) != "シート作成時施設コード"]
       input_csv <- input_csv[ ,colnames(input_csv) != "再入力依頼"]
-      # 日付ならYYYY/MM/DDに変換
-      for (k in 1:ncol(input_csv)) {
-        output_csv[ ,colnames(input_csv)[k]] <- ifelse(!is.na(as.Date(as.character(input_csv[,k]), format = "%Y-%m-%d")), gsub("-", "/", input_csv[ ,k]),input_csv[ ,k])
-      }
+      output_csv <- cbind(output_csv, input_csv)
     }
     # csv出力
     write.csv(output_csv, paste(outputpath, file_list[i], sep="/"), na='""', row.names=F)
