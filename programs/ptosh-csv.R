@@ -84,7 +84,7 @@ for (i in 1:length(file_list)){
       df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$field20))
       df_registration[j,"患者イニシャル"] <- as.character(wk_registration$field22)
       df_registration[j,"患者カナ"] <- as.character(wk_registration$field23)
-      df_registration[j,"性別"] <- ifelse(as.character(wk_registration$field21) == "0", "male", "female")
+      df_registration[j,"性別"] <- as.character(wk_registration$field21)
       wk_base <-  subset(base_csv, 登録コード == input_csv[j,"登録コード"])
       df_registration[j,"生死"] <- as.character(wk_base$生死)
       df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
