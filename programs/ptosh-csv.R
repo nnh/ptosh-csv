@@ -14,21 +14,28 @@ kAllocation <- "allocation"
 
 # registrationシート読み込み
 registration_index <- grep(paste(kOrganization, "registration", sep="_"), file_list)
-if (registration_index > 0) {
+if (length(registration_index) > 0) {
   # na.strings = "" の指定で文字列"NA"を残す
   registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings="")
   file_list <- file_list[ - registration_index]
 }
 # 団体名_YYMMDD_HHMM.csv読み込み
 base_index <- grep(paste0("^", kOrganization, "_[0-9]{6}_[0-9]{4}"), file_list)
-if (base_index > 0) {
+if (length(base_index) > 0) {
   base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T)
   file_list <- file_list[ - base_index]
-}
-# 試験名_YYMMDD_HHMM.csvを削除
-base2_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
-if (base_index > 0) {
-  file_list <- file_list[ - base2_index]
+  # 試験名_YYMMDD_HHMM.csvを削除
+  base2_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
+  if (length(base2_index) > 0) {
+    file_list <- file_list[ - base2_index]
+  }
+} else {
+  # 団体名_YYMMDD_HHMM.csvが存在しない場合は試験名_YYMMDD_HHMM.csvを採用
+  base_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
+  if (length(base_index) > 0) {
+    base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T)
+    file_list <- file_list[ - base_index]
+  }
 }
 
 # 試験名で始まらないCSVは処理対象外とする
@@ -79,16 +86,21 @@ for (i in 1:length(file_list)){
     # 団体名_YYYYMMDD$死亡日
     # "最終確認日"
     # 団体名_YYYYMMDD$最終確認日
-    for (j in 1:nrow(output_csv)){
-      wk_registration <- subset(registration_csv, 登録コード == input_csv[j,"登録コード"])
-      df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$field20))
-      df_registration[j,"患者イニシャル"] <- as.character(wk_registration$field22)
-      df_registration[j,"患者カナ"] <- as.character(wk_registration$field23)
-      df_registration[j,"性別"] <- as.character(wk_registration$field21)
-      wk_base <-  subset(base_csv, 登録コード == input_csv[j,"登録コード"])
-      df_registration[j,"生死"] <- as.character(wk_base$生死)
-      df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
-      df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
+
+    # 登録コードの列がなければスキップ
+    reg_index <- grep("登録コード", colnames(input_csv))
+    if (length(reg_index) > 0) {
+      for (j in 1:nrow(output_csv)){
+        wk_registration <- subset(registration_csv, 登録コード == input_csv[j,"登録コード"])
+        df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$field20))
+        df_registration[j,"患者イニシャル"] <- as.character(wk_registration$field22)
+        df_registration[j,"患者カナ"] <- as.character(wk_registration$field23)
+        df_registration[j,"性別"] <- as.character(wk_registration$field21)
+        wk_base <-  subset(base_csv, 登録コード == input_csv[j,"登録コード"])
+        df_registration[j,"生死"] <- as.character(wk_base$生死)
+        df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
+        df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
+      }
     }
 
     # 作成日
