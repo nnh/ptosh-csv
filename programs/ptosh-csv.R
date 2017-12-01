@@ -1,12 +1,15 @@
-# 団体名、試験名を指定
+# 団体名、試験名、入力ファイル格納場所を指定
 # *********************************
-kOrganization <- "JPLSG"  # 団体名
-kTrialTitle <- "ALL-B12"  # 試験名
-# *********************************
-# output,rawdataはaronas上にて入出力する
+kOrganization  <- "JPLSG"
+kTrialTitle  <- "ALL-B12"
 prtpath <- "//aronas/Datacenter/Users/ohtsuka/ALL-B12"
+# *********************************
 rawdatapath <- paste0(prtpath, "/rawdata")
+# 出力フォルダが存在しなければ作成
 outputpath <- paste0(prtpath, "/output")
+if (!(file.exists(outputpath))){
+  dir.create(outputpath)
+}
 # rawdataフォルダ内のファイル名を取得
 file_list <- list.files(rawdatapath)
 # allocationシートにはグループと割付ラベルの列を追加する
@@ -92,14 +95,29 @@ for (i in 1:length(file_list)){
     if (length(reg_index) > 0) {
       for (j in 1:nrow(output_csv)){
         wk_registration <- subset(registration_csv, 登録コード == input_csv[j,"登録コード"])
-        df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$field20))
-        df_registration[j,"患者イニシャル"] <- as.character(wk_registration$field22)
-        df_registration[j,"患者カナ"] <- as.character(wk_registration$field23)
-        df_registration[j,"性別"] <- as.character(wk_registration$field21)
+        # 各列が存在しない場合はスキップ
+        if (!is.null(wk_registration$生年月日)){
+          df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$生年月日))
+        }
+        if (!is.null(wk_registration$英文イニシャル)){
+          df_registration[j,"患者イニシャル"] <- as.character(wk_registration$英文イニシャル)
+        }
+        if (!is.null(wk_registration$和文名前の一文字目)){
+          df_registration[j,"患者カナ"] <- as.character(wk_registration$和文名前の一文字目)
+        }
+        if (!is.null(wk_registration$性別)){
+          df_registration[j,"性別"] <- as.character(wk_registration$性別)
+        }
         wk_base <-  subset(base_csv, 登録コード == input_csv[j,"登録コード"])
-        df_registration[j,"生死"] <- as.character(wk_base$生死)
-        df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
-        df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
+        if (!is.null(wk_registration$生死)){
+          df_registration[j,"生死"] <- as.character(wk_base$生死)
+        }
+        if (!is.null(wk_registration$死亡日)){
+          df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
+        }
+        if (!is.null(wk_registration$最終確認日)){
+          df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
+        }
       }
     }
 
