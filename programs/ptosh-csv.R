@@ -130,7 +130,7 @@ for (i in 1:length(file_list)){
     # "試験名"
     output_csv$試験名 <- kTrialTitle
     # "シート名"
-    output_csv$シート名 <- NA
+    output_csv$シート名 <- input_csv$シート名英数字別名
     input_csv <- input_csv[ ,colnames(input_csv) != "シート名英数字別名"]
     # "シート作成時施設名"
     output_csv$シート作成時施設名 <- input_csv$シート作成時施設名
