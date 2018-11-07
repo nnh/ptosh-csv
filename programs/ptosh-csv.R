@@ -19,13 +19,14 @@ kAllocation <- "allocation"
 registration_index <- grep(paste(kOrganization, "registration", sep="_"), file_list)
 if (length(registration_index) > 0) {
   # na.strings = "" の指定で文字列"NA"を残す
-  registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings="")
+  registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings=""
+                               , fileEncoding="CP932")
   file_list <- file_list[ - registration_index]
 }
 # 団体名_YYMMDD_HHMM.csv読み込み
 base_index <- grep(paste0("^", kOrganization, "_[0-9]{6}_[0-9]{4}"), file_list)
 if (length(base_index) > 0) {
-  base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T)
+  base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T, fileEncoding="CP932")
   file_list <- file_list[ - base_index]
   # 試験名_YYMMDD_HHMM.csvを削除
   base2_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
@@ -36,7 +37,7 @@ if (length(base_index) > 0) {
   # 団体名_YYMMDD_HHMM.csvが存在しない場合は試験名_YYMMDD_HHMM.csvを採用
   base_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
   if (length(base_index) > 0) {
-    base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T)
+    base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T, fileEncoding="CP932")
     file_list <- file_list[ - base_index]
   }
 }
@@ -48,8 +49,8 @@ for (i in 1:length(file_list)){
   # Shift-JISで列もデータとして取り込む
   res <- try(input_csv <- read.csv(paste(rawdatapath, file_list[i], sep="/"), as.is=T, fileEncoding="CP932", stringsAsFactors=F, header=F), silent=T)
   # 空ファイルは処理スキップ
-  if(class(res) != "try-error") {
-    # 入力ファイルに1行目と同じ内容で列名をセット
+  if(class(res) != "try-error" && nrow(input_csv) > 1)  {
+  # 入力ファイルに1行目と同じ内容で列名をセット
     colnames(input_csv) <- input_csv[1, ]
     input_csv <- input_csv[-1, ]
     # 1列目"バージョン"
