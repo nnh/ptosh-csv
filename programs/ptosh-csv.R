@@ -206,5 +206,8 @@ for (i in 1:length(file_list)){
     }
     # csv出力
     write.csv(output_csv, paste(outputpath, file_list[i], sep="/"), na='""', row.names=F)
+    print(paste0(file_list[i], "を出力しました"))
+  } else {
+    print(paste0(file_list[i], "のデータは0行のため出力対象外です"))
   }
 }
