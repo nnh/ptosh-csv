@@ -20,6 +20,7 @@ installed_package <- target_packages %in% installed.packages()
 if(length(target_packages[!installed_package]) > 0){
   file_list <- NULL
 }
+library(tidyverse)
 lapply(target_packages, require, character.only=T)
 # registrationシート読み込み
 registration_index <- grep(paste(kOrganization, "registration", sep="_"), file_list)
