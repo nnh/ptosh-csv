@@ -18,7 +18,7 @@ kAllocation <- "allocation"
 target_packages = c("tidyverse")
 installed_package <- target_packages %in% installed.packages()
 if(length(target_packages[!installed_package]) > 0){
-  install.packages(target_packages[!installed_package])
+  file_list <- NULL
 }
 lapply(target_packages, require, character.only=T)
 # registrationシート読み込み
@@ -215,4 +215,9 @@ for (i in 1:length(file_list)){
   } else {
     print(paste0(file_list[i], "のデータは0行のため出力対象外です"))
   }
+}
+if (is.null(file_list)){
+  stop("tidyverseパッケージをインストールして処理を再実行してください。")
+} else {
+  print("処理が終了しました。")
 }
