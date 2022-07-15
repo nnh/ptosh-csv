@@ -14,19 +14,23 @@ if (!(file.exists(outputpath))){
 file_list <- list.files(rawdatapath)
 # allocationシートにはグループと割付ラベルの列を追加する
 kAllocation <- "allocation"
-
+# 必要パッケージのインストール
+target_packages = c("tidyverse")
+installed_package <- target_packages %in% installed.packages()
+if(length(target_packages[!installed_package]) > 0){
+  file_list <- NULL
+}
+library(tidyverse)
 # registrationシート読み込み
 registration_index <- grep(paste(kOrganization, "registration", sep="_"), file_list)
 if (length(registration_index) > 0) {
-  # na.strings = "" の指定で文字列"NA"を残す
-  registration_csv <- read.csv(paste(rawdatapath, file_list[registration_index], sep="/"), as.is=T, na.strings=""
-                               , fileEncoding="CP932")
+  registration_csv <- read_csv(paste(rawdatapath, file_list[registration_index], sep="/"), show_col_types=F)
   file_list <- file_list[ - registration_index]
 }
 # 団体名_YYMMDD_HHMM.csv読み込み
 base_index <- grep(paste0("^", kOrganization, "_[0-9]{6}_[0-9]{4}"), file_list)
 if (length(base_index) > 0) {
-  base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T, fileEncoding="CP932")
+  base_csv <- read_csv(paste(rawdatapath, file_list[base_index], sep="/"), show_col_types=F)
   file_list <- file_list[ - base_index]
   # 試験名_YYMMDD_HHMM.csvを削除
   base2_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
@@ -37,7 +41,7 @@ if (length(base_index) > 0) {
   # 団体名_YYMMDD_HHMM.csvが存在しない場合は試験名_YYMMDD_HHMM.csvを採用
   base_index <- grep(paste0("^", kTrialTitle, "_[0-9]{6}_[0-9]{4}"), file_list)
   if (length(base_index) > 0) {
-    base_csv <- read.csv(paste(rawdatapath, file_list[base_index], sep="/"), as.is=T, fileEncoding="CP932")
+    base_csv <- read_csv(paste(rawdatapath, file_list[base_index], sep="/"), show_col_types=F)
     file_list <- file_list[ - base_index]
   }
 }
@@ -46,10 +50,10 @@ if (length(base_index) > 0) {
   file_list <- file_list[grep(paste0("^", kTrialTitle, "_"), file_list)]
 
 for (i in 1:length(file_list)){
-  # Shift-JISで列もデータとして取り込む
-  res <- try(input_csv <- read.csv(paste(rawdatapath, file_list[i], sep="/"), as.is=T, fileEncoding="CP932", stringsAsFactors=F, header=F), silent=T)
+  # 列もデータとして取り込む
+  input_csv <- read_csv(paste(rawdatapath, file_list[i], sep="/"), col_names=F, show_col_types=F)
   # 空ファイルは処理スキップ
-  if(class(res) != "try-error" && nrow(input_csv) > 1)  {
+  if(nrow(input_csv) > 1)  {
   # 入力ファイルに1行目と同じ内容で列名をセット
     colnames(input_csv) <- input_csv[1, ]
     input_csv <- input_csv[-1, ]
@@ -94,29 +98,30 @@ for (i in 1:length(file_list)){
     # 登録コードの列がなければスキップ
     reg_index <- grep("登録コード", colnames(input_csv))
     if (length(reg_index) > 0) {
+      reg_colnames <- colnames(registration_csv)
       for (j in 1:nrow(output_csv)){
-        wk_registration <- subset(registration_csv, 登録コード == input_csv[j,"登録コード"])
+        wk_registration <- subset(registration_csv, 登録コード == as.numeric(input_csv[j,"登録コード"]))
         # 各列が存在しない場合はスキップ
-        if (!is.null(wk_registration$生年月日)){
+        if ("生年月日" %in% reg_colnames){
           df_registration[j,"生年月日"] <- gsub("-", "/", as.character(wk_registration$生年月日))
         }
-        if (!is.null(wk_registration$英文イニシャル)){
+        if ("英文イニシャル" %in% reg_colnames){
           df_registration[j,"患者イニシャル"] <- as.character(wk_registration$英文イニシャル)
         }
-        if (!is.null(wk_registration$和文名前の一文字目)){
+        if ("和文名前の一文字目" %in% reg_colnames){
           df_registration[j,"患者カナ"] <- as.character(wk_registration$和文名前の一文字目)
         }
-        if (!is.null(wk_registration$性別)){
+        if ("性別" %in% reg_colnames){
           df_registration[j,"性別"] <- as.character(wk_registration$性別)
         }
-        wk_base <-  subset(base_csv, 登録コード == input_csv[j,"登録コード"])
-        if (!is.null(wk_registration$生死)){
+        wk_base <-  subset(base_csv, 登録コード == as.numeric(input_csv[j,"登録コード"]))
+        if ("生死" %in% reg_colnames){
           df_registration[j,"生死"] <- as.character(wk_base$生死)
         }
-        if (!is.null(wk_registration$死亡日)){
+        if ("死亡日" %in% reg_colnames){
           df_registration[j,"死亡日"] <- gsub("-", "/", as.character(wk_base$死亡日))
         }
-        if (!is.null(wk_registration$最終確認日)){
+        if ("最終確認日" %in% reg_colnames){
           df_registration[j,"最終確認日"] <- gsub("-", "/", as.character(wk_base$最終確認日))
         }
       }
@@ -205,9 +210,14 @@ for (i in 1:length(file_list)){
       output_csv <- cbind(output_csv, input_csv)
     }
     # csv出力
-    write.csv(output_csv, paste(outputpath, file_list[i], sep="/"), na='""', row.names=F)
+    write_excel_csv(output_csv, paste(outputpath, file_list[i], sep="/"),  na='""')
     print(paste0(file_list[i], "を出力しました"))
   } else {
     print(paste0(file_list[i], "のデータは0行のため出力対象外です"))
   }
+}
+if (is.null(file_list)){
+  stop("tidyverseパッケージをインストールして処理を再実行してください。")
+} else {
+  print("処理が終了しました。")
 }
